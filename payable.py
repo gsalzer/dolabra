@@ -14,7 +14,7 @@ class PayableFunction(DetectionModule):
     name = "Payable Function Analysis"
     description = "Analyzes payable and non-payable functions."
     entry_point = EntryPoint.CALLBACK
-    pre_hooks = ["STOP", "RETURN", "REVERT", "INVALID"]
+    pre_hooks = ["STOP", "RETURN", "REVERT", "HALT"]
 
     def __init__(self):
         super().__init__()
@@ -22,14 +22,19 @@ class PayableFunction(DetectionModule):
     def _execute(self, state: GlobalState) -> None:
         opcode = state.get_current_instruction()["opcode"]
         address = state.get_current_instruction()["address"]
+
+        function_id = state.environment.active_function_name
+
         log.info(
-            f"Encountered {opcode} in function {state.environment.active_function_name}")
+            f"Encountered {opcode} at address {address} in function ({function_id})"
+        )
 
         # Check for payable and non-payable constraints
         constraints_zero_value = state.world_state.constraints + \
             [state.environment.callvalue == 0]
-        constraints_non_zero_value = state.world_state.constraints + \
-            [UGT(state.environment.callvalue, symbol_factory.BitVecVal(0, 256))]
+        constraints_non_zero_value = state.world_state.constraints + [
+            UGT(state.environment.callvalue, symbol_factory.BitVecVal(0, 256))
+        ]
 
         try:
             solver.get_transaction_sequence(state, constraints_zero_value)
@@ -49,10 +54,12 @@ class PayableFunction(DetectionModule):
 
         if payable and non_payable:
             log.info(
-                f"Function {state.environment.active_function_name} seems to have a programming error (both payable and non-payable).")
+                f"Function ({function_id}) seems to have a programming error (both payable and non-payable)."
+            )
         else:
             log.info(
-                f"Function {state.environment.active_function_name} is {'payable' if payable else 'non-payable'}.")
+                f"Function ({function_id}) is {'payable' if payable else 'non-payable'}."
+            )
 
         return
 
