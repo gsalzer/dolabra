@@ -3,6 +3,12 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# IDE files
+.vscode
+
+# log files
+*.txt
+
 # node modules
 node_modules/
 

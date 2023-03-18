@@ -1,7 +1,6 @@
 import logging
 import time
-
-from typing import Text
+from datetime import datetime
 
 import sys
 from mythril.ethereum import util
@@ -13,7 +12,7 @@ from mythril.analysis.report import Report
 # Import custom detection modules
 from payable import PayableFunction
 
-#laser imports
+# laser imports
 from mythril.laser.ethereum import svm
 from mythril.laser.ethereum.state.world_state import WorldState
 from mythril.laser.ethereum.strategy.extensions.bounded_loops import BoundedLoopsStrategy
@@ -27,21 +26,30 @@ from mythril.laser.plugin.plugins import (
     InstructionProfilerBuilder,
 )
 
+# Set up logging
 log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+current_time = datetime.now().strftime('%m-%d_%H-%M-%S')
+filename = f"log_output_{current_time}.txt"
+file_handler = logging.FileHandler(filename)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+logging.getLogger().addHandler(file_handler)
 
 # Contract address
-contract_address: Text
-contract_address = "0x38B903C59223D79c1b51e5B05a9386bDd5d69724"
+contract_address = "0x1a75f1ed86d08ac4c36ff0850dc0c5290eca5100"
 
 # Set up the Ethereum JSON-RPC client
 eth_rpc_client = EthJsonRpc("127.0.0.1", "7545")
 
 # Get the deployed contract's bytecode
 deployed_bytecode = eth_rpc_client.eth_getCode(contract_address)
+#log.info("bytecode: %s", deployed_bytecode)
 dyn_loader = DynLoader(eth_rpc_client)
 
-#LaserWrapper
-laser = svm.LaserEVM(dynamic_loader=dyn_loader, execution_timeout=60, max_depth=128, requires_statespace=False)
+# LaserWrapper
+laser = svm.LaserEVM(dynamic_loader=dyn_loader, execution_timeout=60,
+                     max_depth=128, requires_statespace=False)
 world_state = WorldState()
 world_state.accounts_exist_or_load(contract_address, dyn_loader)
 
@@ -61,20 +69,7 @@ plugin_loader.instrument_virtual_machine(laser, None)
 # Run symbolic execution
 start_time = time.time()
 laser.sym_exec(creation_code=None,
-                contract_name='Unknown',
-                world_state=world_state,
-                target_address=int(contract_address, 16) if contract_address else None)
-#log.info('Symbolic execution finished in %.2f seconds.', time.time() - start_time)
-print("Symbolic execution finished in %.2f seconds.", time.time() - start_time)
-
-
-'''
-# Run the analysis
-mythril.analyze()
-
-# Generate the report
-report = Report(mythril.issues)
-
-# Print the report
-print(report.as_text())
-'''
+               contract_name='Unknown',
+               world_state=world_state,
+               target_address=int(contract_address, 16) if contract_address else None)
+log.info('Symbolic execution finished in %.2f seconds.', time.time() - start_time)
