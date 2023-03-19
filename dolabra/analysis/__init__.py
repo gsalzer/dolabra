@@ -1,2 +1,2 @@
-from .module_test import run_analysis
-from .payable import PayableFunction
+from dolabra.analysis.symbolic import SymbolicWrapper
+from dolabra.analysis.payable import PayableFunction
