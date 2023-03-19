@@ -38,6 +38,7 @@ logging.getLogger().addHandler(file_handler)
 
 # Contract address
 contract_address = "0xd54dc858ba35e03add06ff47d6e920406d014924"
+#contract_address = "0xa3e56a46078ecf299d8d5ec3e59756a9e6efa95e8c5e0574aa75fcc90e6cdddd"
 
 # Set up the Ethereum JSON-RPC client
 eth_rpc_client = EthJsonRpc("127.0.0.1", "7545")
