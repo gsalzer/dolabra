@@ -1,5 +1,6 @@
 import time
 import logging
+from typing import Optional, Text, Union
 
 import sys
 from mythril.ethereum import util
@@ -11,6 +12,8 @@ from mythril.analysis.report import Report
 # Import custom detection modules
 from dolabra.analysis.payable import PayableFunction
 from dolabra.logger.log_manager import setup_logger
+from dolabra.contract_loaders.file_loader import FileLoader
+from dolabra.contract_loaders.jsonrpc_loader import JsonRpcLoader
 
 # laser imports
 from mythril.laser.ethereum import svm
@@ -30,22 +33,38 @@ setup_logger()
 log = logging.getLogger(__name__)
 
 class SymbolicWrapper:
-    def __init__(self, contract_address):
-        self.contract_address = contract_address
+    def __init__(self, contract):
+        self.contract = contract
+
+    def load_contract(self, contract):
+        if contract is not None:
+            if isinstance(contract, FileLoader):
+                return contract.contract().creation_disassembly.bytecode
+            elif isinstance(contract, JsonRpcLoader):
+                target_address = contract.address
+                dyn_loader = contract.dyn_loader
+            else:
+                raise ValueError('Invalid type for contract parameter')    
 
     def run_analysis(self):
-        # Contract address
-        contract_address = self.contract_address
-        # contract_address = "0xd54dc858ba35e03add06ff47d6e920406d014924"
-        # contract_address = "0xa3e56a46078ecf299d8d5ec3e59756a9e6efa95e8c5e0574aa75fcc90e6cdddd"
-
+        contract = self.contract
+        if contract is not None:
+            if isinstance(contract, FileLoader):
+                bytecode = contract.contract().creation_disassembly.bytecode
+            elif isinstance(contract, JsonRpcLoader):
+                contract_address = contract.address
+                dyn_loader = contract.dyn_loader
+            else:
+                raise ValueError('Invalid type for contract parameter')
+            
+        # TODO: handle the case where contract is None/bytecode is None
         # Set up the Ethereum JSON-RPC client
-        eth_rpc_client = EthJsonRpc("127.0.0.1", "7545")
+        #eth_rpc_client = EthJsonRpc("127.0.0.1", "7545")
 
         # Get the deployed contract's bytecode
-        deployed_bytecode = eth_rpc_client.eth_getCode(contract_address)
+        #deployed_bytecode = eth_rpc_client.eth_getCode(contract_address)
         # log.info("bytecode: %s", deployed_bytecode)
-        dyn_loader = DynLoader(eth_rpc_client)
+        #dyn_loader = DynLoader(eth_rpc_client)
 
         # LaserWrapper
         laser = svm.LaserEVM(dynamic_loader=dyn_loader, execution_timeout=60,

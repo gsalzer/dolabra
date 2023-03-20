@@ -12,3 +12,11 @@ class SolidityLoader(FileLoader):
 
     def contract(self) -> EVMContract:
         return SolidityContract(str(self._file_path), solc_binary=self._solc)
+    
+    @classmethod
+    def create(cls, **options):
+        return cls(options.get('path'), solc=options.get('solc'))
+
+    
+
+

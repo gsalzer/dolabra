@@ -40,3 +40,7 @@ class JsonRpcLoader(ContractLoader):
 
     def disassembly(self) -> Optional[Disassembly]:
         return self.dyn_loader.dynld(self.address)
+    
+    @classmethod
+    def create(cls, **options):
+        return cls(options.get('address'), options.get('rpc'))
