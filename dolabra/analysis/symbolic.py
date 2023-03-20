@@ -1,6 +1,5 @@
-import logging
 import time
-from datetime import datetime
+import logging
 
 import sys
 from mythril.ethereum import util
@@ -11,6 +10,7 @@ from mythril.analysis.report import Report
 
 # Import custom detection modules
 from dolabra.analysis.payable import PayableFunction
+from dolabra.logger.log_manager import setup_logger
 
 # laser imports
 from mythril.laser.ethereum import svm
@@ -26,17 +26,8 @@ from mythril.laser.plugin.plugins import (
     InstructionProfilerBuilder,
 )
 
-# Set up logging
+setup_logger()
 log = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
-current_time = datetime.now().strftime('%m-%d_%H-%M-%S')
-filename = f"log_output_{current_time}.txt"
-file_handler = logging.FileHandler("./../logs/" + filename)
-formatter = logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-file_handler.setFormatter(formatter)
-logging.getLogger().addHandler(file_handler)
-
 
 class SymbolicWrapper:
     def __init__(self, contract_address):
