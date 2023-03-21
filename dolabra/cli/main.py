@@ -53,8 +53,7 @@ def analyze(args) -> None:
     else:
         raise NotImplementedError('This feature is not available')
 
-    contract = contract_loader.create()
-    symbolic_analysis = SymbolicWrapper(contract)
+    symbolic_analysis = SymbolicWrapper(contract_loader)
     
     symbolic_analysis.run_analysis()
 

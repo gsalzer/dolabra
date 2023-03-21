@@ -10,14 +10,8 @@ __pycache__/
 *.txt
 logs/
 
-# node modules
-node_modules/
-
-# yarn
-yarn.lock
-
-# C extensions
-*.so
+# bytecode
+*.bin
 
 # Distribution / packaging
 .Python
