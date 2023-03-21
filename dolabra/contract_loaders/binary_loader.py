@@ -1,7 +1,10 @@
+import logging
 from typing import Text
 from dolabra.contract_loaders.file_loader import FileLoader
 
 from mythril.ethereum.evmcontract import EVMContract
+
+log = logging.getLogger(__name__)
 
 class BinaryLoader(FileLoader):
     def __init__(self, path: Text) -> None:
