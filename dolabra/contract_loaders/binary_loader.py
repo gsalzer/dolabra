@@ -10,10 +10,10 @@ class BinaryLoader(FileLoader):
     def __init__(self, path: Text) -> None:
         super().__init__(path)
 
-    def contract(self) -> EVMContract:
+    def contract(self) -> EVMContract:        
         try:
             with open(self._file_path, 'rb') as contract_bin:
-                bytecode = contract_bin.read()
+                bytecode = contract_bin.read().decode()
         except IOError as e:
             log.error('Failed to open contract binary file: %s', e)
             raise IOError('Failed to open contract binary file')
