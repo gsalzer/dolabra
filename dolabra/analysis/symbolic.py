@@ -7,6 +7,8 @@ from dolabra.logger.log_manager import setup_logger
 from dolabra.contract_loaders.file_loader import FileLoader
 from dolabra.contract_loaders.jsonrpc_loader import JsonRpcLoader
 
+from dolabra.constants import TIMEOUT, MAX_DEPTH, BOUNDED_LOOPS_LIMIT
+
 # laser imports
 from mythril.laser.ethereum import svm
 from mythril.laser.ethereum.state.world_state import WorldState
@@ -99,13 +101,13 @@ class SymbolicWrapper:
         log.info('Processing the contract and preparing for analysis...')
         bytecode, contract_address, dyn_loader = self._process_contract()
 
-        laser, world_state = self._initialize_laser(timeout=60,
-                                                    max_depth=128,
+        laser, world_state = self._initialize_laser(timeout=TIMEOUT,
+                                                    max_depth=MAX_DEPTH,
                                                     creation_code=bytecode,
                                                     target_address=contract_address,
                                                     dyn_loader=dyn_loader)
 
-        self._register_hooks_and_load_plugins(laser, bounded_loops_limit=3)
+        self._register_hooks_and_load_plugins(laser, bounded_loops_limit=BOUNDED_LOOPS_LIMIT)
 
         start_time, end_time = self._run_symbolic_execution(laser,
                                                             creation_code=bytecode,
