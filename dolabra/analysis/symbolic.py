@@ -1,13 +1,5 @@
 import time
 import logging
-from typing import Optional, Text, Union
-
-import sys
-from mythril.ethereum import util
-from mythril.ethereum.interface.rpc.client import EthJsonRpc
-from mythril.support.loader import DynLoader
-from mythril.analysis.symbolic import SymExecWrapper
-from mythril.analysis.report import Report
 
 # Import custom detection modules
 from dolabra.analysis.payable import PayableFunction
@@ -20,7 +12,6 @@ from mythril.laser.ethereum import svm
 from mythril.laser.ethereum.state.world_state import WorldState
 from mythril.laser.ethereum.strategy.extensions.bounded_loops import BoundedLoopsStrategy
 from mythril.laser.plugin.loader import LaserPluginLoader
-from mythril.support.loader import DynLoader
 
 from mythril.laser.plugin.plugins import (
     MutationPrunerBuilder,
@@ -33,21 +24,16 @@ setup_logger()
 log = logging.getLogger(__name__)
 
 class SymbolicWrapper:
+
     def __init__(self, contract):
         self.contract = contract
 
-    def load_contract(self, contract):
-        if contract is not None:
-            if isinstance(contract, FileLoader):
-                return contract.contract().creation_disassembly.bytecode
-            elif isinstance(contract, JsonRpcLoader):
-                target_address = contract.address
-                dyn_loader = contract.dyn_loader
-            else:
-                raise ValueError('Invalid type for contract parameter')    
-
-    def run_analysis(self):
+    def _process_contract(self):
         contract = self.contract
+        bytecode = None
+        contract_address = None
+        dyn_loader = None
+
         if contract is not None:
             if isinstance(contract, FileLoader):
                 bytecode = contract.contract().creation_disassembly.bytecode
@@ -56,28 +42,41 @@ class SymbolicWrapper:
                 dyn_loader = contract.dyn_loader
             else:
                 raise ValueError('Invalid type for contract parameter')
-            
-        # TODO: handle the case where contract is None/bytecode is None
-        # Set up the Ethereum JSON-RPC client
-        #eth_rpc_client = EthJsonRpc("127.0.0.1", "7545")
 
-        # Get the deployed contract's bytecode
-        #deployed_bytecode = eth_rpc_client.eth_getCode(contract_address)
-        # log.info("bytecode: %s", deployed_bytecode)
-        #dyn_loader = DynLoader(eth_rpc_client)
+        return bytecode, contract_address, dyn_loader
 
-        # LaserWrapper
-        laser = svm.LaserEVM(dynamic_loader=dyn_loader, execution_timeout=60,
-                            max_depth=128, requires_statespace=False)
-        world_state = WorldState()
-        world_state.accounts_exist_or_load(contract_address, dyn_loader)
+    def _initialize_laser(self, timeout, max_depth, creation_code, target_address, dyn_loader):
+        world_state = None
 
+        if creation_code is not None and target_address is None:
+            log.info('Initializing symbolic execution for contract creation...')
+            laser = svm.LaserEVM(execution_timeout=timeout,
+                                 max_depth=max_depth, requires_statespace=False)
+
+        elif creation_code is None and target_address is not None:
+            assert dyn_loader is not None, "Dynamic Loader has not been provided"
+            log.info('Initializing symbolic execution for an existing contract...')
+            world_state = WorldState()
+            world_state.accounts_exist_or_load(target_address, dyn_loader)
+            laser = svm.LaserEVM(dynamic_loader=dyn_loader, execution_timeout=timeout,
+                                 max_depth=max_depth, requires_statespace=False)
+
+        else:
+            raise ValueError(
+                'Either creation_code or target_address needs to be provided')
+
+        return laser, world_state
+
+    def _register_hooks_and_load_plugins(self, laser, bounded_loops_limit):
+        log.info('Registering hooks and loading plugins...')
+        #TODO: This is a temporary solution to register hooks
         current_strategy = PayableFunction()
         for hook in current_strategy.pre_hooks:
             laser.register_hooks('pre', {hook: [current_strategy.execute]})
 
         # Load laser plugins
-        laser.extend_strategy(BoundedLoopsStrategy, loop_bound=3)
+        laser.extend_strategy(BoundedLoopsStrategy,
+                              loop_bound=bounded_loops_limit)
         plugin_loader = LaserPluginLoader()
         plugin_loader.load(CoveragePluginBuilder())
         plugin_loader.load(MutationPrunerBuilder())
@@ -85,11 +84,34 @@ class SymbolicWrapper:
         plugin_loader.load(DependencyPrunerBuilder())
         plugin_loader.instrument_virtual_machine(laser, None)
 
-        # Run symbolic execution
+    def _run_symbolic_execution(self, laser, creation_code, target_address, world_state=None):
+        log.info('Starting symbolic execution...')
         start_time = time.time()
-        laser.sym_exec(creation_code=None,
-                    contract_name='Unknown',
-                    world_state=world_state,
-                    target_address=int(contract_address, 16) if contract_address else None)
+        laser.sym_exec(creation_code=creation_code,
+                       contract_name='Unknown',
+                       world_state=world_state,
+                       target_address=int(target_address, 16) if target_address else None)
         log.info('Symbolic execution finished in %.2f seconds.',
-                time.time() - start_time)
+                 time.time() - start_time)
+        return start_time, time.time()
+
+    def run_analysis(self):
+        log.info('Processing the contract and preparing for analysis...')
+        bytecode, contract_address, dyn_loader = self._process_contract()
+
+        laser, world_state = self._initialize_laser(timeout=60,
+                                                    max_depth=128,
+                                                    creation_code=bytecode,
+                                                    target_address=contract_address,
+                                                    dyn_loader=dyn_loader)
+
+        self._register_hooks_and_load_plugins(laser, bounded_loops_limit=3)
+
+        start_time, end_time = self._run_symbolic_execution(laser,
+                                                            creation_code=bytecode,
+                                                            target_address=contract_address,
+                                                            world_state=world_state)
+
+        # report = Report(start_time=start_time, end_time=end_time)
+
+        # return report
