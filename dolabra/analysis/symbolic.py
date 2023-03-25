@@ -1,8 +1,11 @@
 import time
 import logging
+from typing import Optional
+from dolabra.analysis.module.modules.loader import ModuleLoader
 
 # Import custom detection modules
-from dolabra.analysis.payable import PayableFunction
+from dolabra.analysis.module.modules.payable import PayableFunction
+from dolabra.analysis.module.modules.storage_caller_check import StorageCallerCheck
 from dolabra.logger.log_manager import setup_logger
 from dolabra.contract_loaders.file_loader import FileLoader
 from dolabra.contract_loaders.jsonrpc_loader import JsonRpcLoader
@@ -27,8 +30,9 @@ log = logging.getLogger(__name__)
 
 class SymbolicWrapper:
 
-    def __init__(self, contract):
+    def __init__(self, contract, module_loader: Optional[ModuleLoader] = ModuleLoader()):
         self.contract = contract
+        self.module_loader = module_loader
 
     def _process_contract(self):
         contract = self.contract
@@ -70,11 +74,13 @@ class SymbolicWrapper:
         return laser, world_state
 
     def _register_hooks_and_load_plugins(self, laser, bounded_loops_limit):
-        log.info('Registering hooks and loading plugins...')
-        #TODO: This is a temporary solution to register hooks
-        current_strategy = PayableFunction()
-        for hook in current_strategy.pre_hooks:
-            laser.register_hooks('pre', {hook: [current_strategy.execute]})
+        log.info('Registering hooks and loading plugins...')     
+
+        for module in self.module_loader.get_detection_modules():
+            for hook in module.pre_hooks:
+                laser.register_hooks('pre', {hook: [module.execute]})
+            for hook in module.post_hooks:
+                laser.register_hooks('post', {hook: [module.execute]})    
 
         # Load laser plugins
         laser.extend_strategy(BoundedLoopsStrategy,
