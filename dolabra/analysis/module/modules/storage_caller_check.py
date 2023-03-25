@@ -94,3 +94,5 @@ class StorageCallerCheck(DetectionModule):
 
         return storage_caller_checks
     '''
+#TODO: check if it is needed
+detector = StorageCallerCheck()
