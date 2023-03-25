@@ -5,7 +5,7 @@ from mythril.analysis.report import Issue
 from mythril.exceptions import UnsatError
 from mythril.laser.ethereum.state.global_state import GlobalState
 from mythril.laser.ethereum.transaction.symbolic import ACTORS
-from mythril.laser.smt import And, UGT, symbol_factory
+from mythril.laser.smt import UGT, symbol_factory
 
 log = logging.getLogger(__name__)
 
