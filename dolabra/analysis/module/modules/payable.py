@@ -1,11 +1,15 @@
 import logging
+from typing import List
 from mythril.analysis import solver
 from mythril.analysis.module.base import DetectionModule, EntryPoint
-from mythril.analysis.report import Issue
 from mythril.exceptions import UnsatError
 from mythril.laser.ethereum.state.global_state import GlobalState
-from mythril.laser.ethereum.transaction.symbolic import ACTORS
-from mythril.laser.smt import And, UGT, symbol_factory
+from mythril.laser.smt import UGT, symbol_factory
+
+from mythril.analysis.potential_issues import (
+    PotentialIssue,
+    get_potential_issues_annotation,
+)
 
 log = logging.getLogger(__name__)
 
@@ -20,6 +24,12 @@ class PayableFunction(DetectionModule):
         super().__init__()
 
     def _execute(self, state: GlobalState) -> None:
+        potential_issues = self._analyze_state(state)
+
+        annotation = get_potential_issues_annotation(state)
+        annotation.potential_issues.extend(potential_issues)
+
+    def _analyze_state(self, state: GlobalState) -> List[PotentialIssue]:
         opcode = state.get_current_instruction()["opcode"]
         address = state.get_current_instruction()["address"]
 
@@ -56,12 +66,24 @@ class PayableFunction(DetectionModule):
             log.info(
                 f"Function ({function_id}) seems to have a programming error (both payable and non-payable)."
             )
+            potential_issue = PotentialIssue(
+                contract=state.environment.active_account.contract_name,
+                function_name=state.environment.active_function_name,
+                address=address,
+                swc_id="N/A",
+                title="Payable Function Analysis",
+                severity="Neutral",
+                description_head="Function seems to have a programming error (both payable and non-payable).",
+                bytecode=state.environment.code.bytecode,
+                detector=self
+            )
+            return [potential_issue]
         else:
             log.info(
                 f"Function ({function_id}) is {'payable' if payable else 'non-payable'}."
             )
-
-        return
+            return []
 
 
 detector = PayableFunction()
+
