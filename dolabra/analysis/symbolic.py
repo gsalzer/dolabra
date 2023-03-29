@@ -3,9 +3,6 @@ import logging
 from typing import Optional
 from dolabra.analysis.module.modules.loader import ModuleLoader
 
-# Import custom detection modules
-from dolabra.analysis.module.modules.payable import PayableFunction
-from dolabra.analysis.module.modules.storage_caller_check import StorageCallerCheck
 from dolabra.logger.log_manager import setup_logger
 from dolabra.contract_loaders.file_loader import FileLoader
 from dolabra.contract_loaders.jsonrpc_loader import JsonRpcLoader
