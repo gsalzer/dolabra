@@ -73,7 +73,7 @@ class SymbolicWrapper:
     def _register_hooks_and_load_plugins(self, laser, bounded_loops_limit):
         log.info('Registering hooks and loading plugins...')     
 
-        for module in self.module_loader.get_detection_modules():
+        for module in self.module_loader.get_detection_modules(entry_point=None, white_list=["StorageCallerCheck"]):
             for hook in module.pre_hooks:
                 laser.register_hooks('pre', {hook: [module.execute]})
             for hook in module.post_hooks:

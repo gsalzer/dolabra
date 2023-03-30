@@ -29,7 +29,7 @@ class ModuleLoader(object, metaclass=Singleton):
 
         result = self._modules[:]
 
-        if white_list:          
+        if white_list:
             available_names = [type(module).__name__ for module in result]
 
             for name in white_list:
