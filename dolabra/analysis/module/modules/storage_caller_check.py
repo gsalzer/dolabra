@@ -11,32 +11,35 @@ from mythril.analysis.potential_issues import (
 
 log = logging.getLogger(__name__)
 
-class Caller:
-    """ Class to be used as annotation for CALLER elements. """
+class InputTaint:
+    """ Class to be used as annotation for tainted input elements. """
+
+    def __init__(self, taint_id: str):
+        self.taint_id = taint_id
 
     def __hash__(self):
-        return hash(type(self))
+        return hash((type(self), self.taint_id))
 
-    def __eq__(self, other: 'Caller'):
-        return isinstance(other, Caller)
+    def __eq__(self, other: 'InputTaint'):
+        return isinstance(other, InputTaint) and self.taint_id == other.taint_id
 
 
-class Storage:
-    """ Class to be used for SLOAD elements. """
+class StorageTaint:
+    """ Class to be used as annotation for SLOAD elements with tainted input. """
 
-    def __init__(self, storage_address: Optional[int] = None):
-        self.storage_address = storage_address
+    def __init__(self, taint_id: str):
+        self.taint_id = taint_id
 
     def __hash__(self):
-        return hash((type(self), self.storage_address))
+        return hash((type(self), self.taint_id))
 
-    def __eq__(self, other: 'Storage'):
-        return self.storage_address == other.storage_address
+    def __eq__(self, other: 'StorageTaint'):
+        return isinstance(other, StorageTaint) and self.taint_id == other.taint_id
 
 
 class StorageCallerCheck(DetectionModule):
     name = "StorageCallerCheck"
-    description = "TODO"
+    description = "Detects when a contract checks if a tainted input is equal to a stored address before execution."
     entry_point = EntryPoint.CALLBACK
 
     def __init__(self):
@@ -52,44 +55,50 @@ class StorageCallerCheck(DetectionModule):
 
     def _analyze_state(self, state: GlobalState, prev_state: Optional[GlobalState] = None) -> Optional[dict]:
         if prev_state and prev_state.instruction['opcode'] == 'CALLER':
-            state.mstate.stack[-1].annotate(Caller())
+            state.mstate.stack[-1].annotate(InputTaint('caller'))
         elif prev_state and prev_state.instruction['opcode'] == 'SLOAD':
-            state.mstate.stack[-1].annotate(Storage(prev_state.mstate.stack[-1].value))
+            if self._has_annotation(prev_state.mstate.stack[-1], InputTaint):
+                taint_id = self._get_annotation(prev_state.mstate.stack[-1], InputTaint).taint_id
+                state.mstate.stack[-1].annotate(StorageTaint(taint_id))
 
         log.info(
                 f"Analyzed {state.instruction['opcode']} at address {state.instruction['address']} in function ({state.environment.active_function_name})"
             )
 
         if state.instruction['opcode'] == 'EQ':
-            if (Caller() in state.mstate.stack[-1].annotations and
-                    self._has_annotation(state.mstate.stack[-2], Storage)):
-                state.mstate.stack[-1].annotate(Caller())
-            elif (Caller() in state.mstate.stack[-2].annotations and
-                  self._has_annotation(state.mstate.stack[-1], Storage)):
-                state.mstate.stack[-2].annotate(Caller())
+            if (self._has_annotation(state.mstate.stack[-1], StorageTaint) and
+                    self._has_annotation(state.mstate.stack[-2], InputTaint)):
+                storage_taint = self._get_annotation(state.mstate.stack[-1], StorageTaint)
+                input_taint = self._get_annotation(state.mstate.stack[-2], InputTaint)
+                if storage_taint.taint_id != input_taint.taint_id:
+                    state.mstate.stack[-1].annotate(InputTaint(input_taint.taint_id))
+            elif (self._has_annotation(state.mstate.stack[-2], StorageTaint) and
+                self._has_annotation(state.mstate.stack[-1], InputTaint)):
+                storage_taint = self._get_annotation(state.mstate.stack[-2], StorageTaint)
+                input_taint = self._get_annotation(state.mstate.stack[-1], InputTaint)
+                if storage_taint.taint_id != input_taint.taint_id:
+                    state.mstate.stack[-1].annotate(InputTaint(storage_taint.taint_id))
 
-        if state.instruction['opcode'] == 'JUMPI' and Caller() in state.mstate.stack[-2].annotations:
-            storage_address = self._retrieve_storage_address(state.mstate.stack[-2])
+            if (self._has_annotation(state.mstate.stack[-1], InputTaint) and
+                self._has_annotation(state.mstate.stack[-2], StorageTaint)):
 
-            function_id = state.environment.active_function_name
+                function_id = state.environment.active_function_name
 
-            log.info(
-                f"Encountered {state.instruction['opcode']} at address {state.instruction['address']} in function ({function_id})"
-            )
+                log.info(
+                    f"Encountered {state.instruction['opcode']} at address {state.instruction['address']} in function ({function_id})"
+                )
             
-            potential_issue = PotentialIssue(
-                contract=state.environment.active_account.contract_name,
-                function_name=state.environment.active_function_name,
-                address=storage_address,
-                swc_id="N/A",
-                title="Storage Caller Check Analysis",
-                severity="Neutral",
-                description_head="_index_caller_check",
-                bytecode=state.environment.code.bytecode,
-                detector=self
-            )
-            return [potential_issue]
-
+                issue = PotentialIssue(
+                    contract=state.environment.active_account.contract_name,
+                    function_name=state.environment.active_function_name,
+                    address=state.get_current_instruction()['address'],
+                    swc_id="SWC-XXXX",
+                    title="Storage Caller Check",
+                    severity="Low",
+                    description="Detected a condition where a tainted input is checked against a stored address.",
+                    bytecode=state.environment.code.bytecode,
+                )
+                return [issue]
         return []
 
     def _has_annotation(self, element, annotation_class):
