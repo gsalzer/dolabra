@@ -4,7 +4,7 @@ import pathlib
 VERSION = '0.1'
 CURRENT_DIR = pathlib.Path(__file__).parent
 README = (CURRENT_DIR / 'README.md').read_text()
-PYTHON_REQUIREMENT = '>=3.10.0'
+PYTHON_REQUIREMENT = '>=3.7.0'
 
 REQUIREMENTS = [
     "Jinja2==2.11.2",
