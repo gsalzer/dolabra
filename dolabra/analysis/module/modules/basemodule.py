@@ -1,7 +1,7 @@
 import logging
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Set, Text, Type
+from typing import List, Optional, Set, Text, Type, Dict
 
 from mythril.laser.ethereum.state.global_state import GlobalState
 from mythril.laser.smt.bitvec import BitVec
@@ -24,7 +24,7 @@ class BaseModule(ABC):
 
     def __init__(self):
         self.cache: Set[Text] = set()
-        self.results:  List[Text] = []
+        self.results: List[Dict[Text, Text]] = []
 
     def reset(self) -> None:
         self.cache = set()
@@ -39,7 +39,7 @@ class BaseModule(ABC):
         log.debug('Executing analysis module %s', type(self).__name__)
         result = self._analyze(state, state.node.states[-1] if len(state.node.states) > 0 and state is not state.node.states[-1] else None)
         if result is not None:
-            log.info('Analysis strategy %s got a hit in function %s', type(self).__name__, result.function_name)
+            log.info('Analysis strategy %s got a hit in function %s', type(self).__name__, result['function_name'])
             self.results.append(result)
             self.cache.add(state.environment.active_function_name)
         return result
