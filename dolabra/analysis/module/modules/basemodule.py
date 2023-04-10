@@ -40,7 +40,7 @@ class BaseModule(ABC):
         result = self._analyze(state, state.node.states[-1] if len(state.node.states) > 0 and state is not state.node.states[-1] else None)
         if result is not None:
             log.info('Analysis strategy %s got a hit in function %s', type(self).__name__, result['function_name'])
-            self.results.append(result)
+            self.results.append(result)            
             self.cache.add(state.environment.active_function_name)
         return result
 

@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 from typing import Text
+import pprint
 
 from dolabra.analysis.symbolic import SymbolicWrapper
 from dolabra.contract_loaders.loader import LoaderType, Loader
@@ -55,7 +56,8 @@ def analyze(args) -> None:
 
     symbolic_analysis = SymbolicWrapper(contract_loader)
     
-    symbolic_analysis.run_analysis()
+    report = symbolic_analysis.run_analysis()
+    pprint.pprint(report, width=1)
 
 def main():
     parser = init_parser()

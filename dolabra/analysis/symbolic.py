@@ -26,6 +26,8 @@ setup_logger()
 log = logging.getLogger(__name__)
 
 class SymbolicWrapper:
+    entry_point=None
+    white_list=["Getter"]
 
     def __init__(self, contract, module_loader: Optional[ModuleLoader] = ModuleLoader()):
         self.contract = contract
@@ -73,7 +75,7 @@ class SymbolicWrapper:
     def _register_hooks_and_load_plugins(self, laser, bounded_loops_limit):
         log.info('Registering hooks and loading plugins...')     
 
-        for module in self.module_loader.get_detection_modules(entry_point=None, white_list=["StorageCallerCheck"]):
+        for module in self.module_loader.get_detection_modules(self.entry_point, self.white_list):
             for hook in module.pre_hooks:
                 laser.register_hooks('pre', {hook: [module.execute]})
             for hook in module.post_hooks:
@@ -98,7 +100,13 @@ class SymbolicWrapper:
                        target_address=int(target_address, 16) if target_address else None)
         log.info('Symbolic execution finished in %.2f seconds.',
                  time.time() - start_time)
-        return start_time, time.time()
+        #return start_time, time.time()
+
+        report = []
+        for module in self.module_loader.get_detection_modules(self.entry_point, self.white_list):
+            report.append(module.results)
+
+        return report    
 
     def run_analysis(self):
         log.info('Processing the contract and preparing for analysis...')
@@ -112,11 +120,11 @@ class SymbolicWrapper:
 
         self._register_hooks_and_load_plugins(laser, bounded_loops_limit=BOUNDED_LOOPS_LIMIT)
 
-        start_time, end_time = self._run_symbolic_execution(laser,
+        report = self._run_symbolic_execution(laser,
                                                             creation_code=bytecode,
                                                             target_address=contract_address,
                                                             world_state=world_state)
 
         # report = Report(start_time=start_time, end_time=end_time)
 
-        # return report
+        return report
