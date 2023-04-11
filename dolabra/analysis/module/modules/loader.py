@@ -4,6 +4,7 @@ from mythril.support.support_utils import Singleton
 from dolabra.analysis.module.modules.payable import PayableFunction
 from dolabra.analysis.module.modules.storage_caller_check import StorageCallerCheck
 from dolabra.analysis.module.modules.getter import Getter
+from dolabra.analysis.module.modules.setter import Setter
 
 from mythril.analysis.module.base import EntryPoint
 from mythril.exceptions import DetectorNotFoundError
@@ -54,6 +55,7 @@ class ModuleLoader(object, metaclass=Singleton):
             [
                 PayableFunction(),
                 StorageCallerCheck(),
-                Getter()
+                Getter(),
+                Setter()
             ]
         )

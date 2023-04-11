@@ -62,7 +62,6 @@ class Getter(BaseModule):
                     if DupOneTaint() in state.mstate.stack[stack_index].annotations and current_function not in self.already_storage_tainted_sign:                        
                         state.mstate.stack[stack_index].annotate(StorageTaint())
                         self.already_storage_tainted_sign.append(current_function)
-                        #print(current_function, stack_index, state.mstate.stack[stack_index].annotations)   
                         return {'contract': state.environment.active_account.contract_name, 'pattern': self.pattern_name, 'function_name': current_function}             
 
         return None
