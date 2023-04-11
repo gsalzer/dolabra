@@ -26,8 +26,8 @@ setup_logger()
 log = logging.getLogger(__name__)
 
 class SymbolicWrapper:
-    entry_point=None
-    white_list=["Getter"]
+    white_list=["Getter", "Setter"]
+    #white_list=["StorageCallerCheck"]
     
     def __init__(self, contract, module_loader: Optional[ModuleLoader] = ModuleLoader()):
         self.contract = contract
@@ -75,7 +75,7 @@ class SymbolicWrapper:
     def _register_hooks_and_load_plugins(self, laser, bounded_loops_limit):
         log.info('Registering hooks and loading plugins...')     
 
-        for module in self.module_loader.get_detection_modules(self.entry_point, self.white_list):
+        for module in self.module_loader.get_detection_modules(self.white_list):
             for hook in module.pre_hooks:
                 laser.register_hooks('pre', {hook: [module.execute]})
             for hook in module.post_hooks:
@@ -103,7 +103,7 @@ class SymbolicWrapper:
         #return start_time, time.time()
 
         report = []
-        for module in self.module_loader.get_detection_modules(self.entry_point, self.white_list):
+        for module in self.module_loader.get_detection_modules(self.white_list):
             report.append(module.results)
 
         return report    
