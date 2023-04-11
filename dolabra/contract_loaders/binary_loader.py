@@ -1,8 +1,9 @@
 import logging
 from typing import Text
-from dolabra.contract_loaders.file_loader import FileLoader
 
 from mythril.ethereum.evmcontract import EVMContract
+
+from dolabra.contract_loaders.file_loader import FileLoader
 
 log = logging.getLogger(__name__)
 

@@ -1,13 +1,6 @@
 import time
 import logging
 from typing import Optional
-from dolabra.analysis.module.modules.loader import ModuleLoader
-
-from dolabra.logger.log_manager import setup_logger
-from dolabra.contract_loaders.file_loader import FileLoader
-from dolabra.contract_loaders.jsonrpc_loader import JsonRpcLoader
-
-from dolabra.constants import TIMEOUT, MAX_DEPTH, BOUNDED_LOOPS_LIMIT
 
 # laser imports
 from mythril.laser.ethereum import svm
@@ -22,13 +15,20 @@ from mythril.laser.plugin.plugins import (
     InstructionProfilerBuilder,
 )
 
+from dolabra.analysis.module.modules.loader import ModuleLoader
+from dolabra.logger.log_manager import setup_logger
+from dolabra.contract_loaders.file_loader import FileLoader
+from dolabra.contract_loaders.jsonrpc_loader import JsonRpcLoader
+
+from dolabra.constants import TIMEOUT, MAX_DEPTH, BOUNDED_LOOPS_LIMIT
+
 setup_logger()
 log = logging.getLogger(__name__)
 
 class SymbolicWrapper:
     entry_point=None
     white_list=["Getter"]
-
+    
     def __init__(self, contract, module_loader: Optional[ModuleLoader] = ModuleLoader()):
         self.contract = contract
         self.module_loader = module_loader

@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Union, Optional
+
 from mythril.ethereum.evmcontract import EVMContract
 from mythril.solidity.soliditycontract import SolidityContract
 

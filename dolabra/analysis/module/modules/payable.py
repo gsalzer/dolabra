@@ -1,5 +1,6 @@
 import logging
 from typing import List
+
 from mythril.analysis import solver
 from mythril.analysis.module.base import DetectionModule, EntryPoint
 from mythril.exceptions import UnsatError

@@ -1,16 +1,10 @@
-from mythril.analysis.module.base import DetectionModule, EntryPoint
-from mythril.support.support_utils import Singleton
-
-from dolabra.analysis.module.modules.payable import PayableFunction
-from dolabra.analysis.module.modules.storage_caller_check import StorageCallerCheck
-from dolabra.analysis.module.modules.getter import Getter
-from dolabra.analysis.module.modules.setter import Setter
-
-from mythril.analysis.module.base import EntryPoint
-from mythril.exceptions import DetectorNotFoundError
-
 from typing import Optional, List
 
+from mythril.analysis.module.base import DetectionModule, EntryPoint
+from mythril.support.support_utils import Singleton
+from mythril.exceptions import DetectorNotFoundError
+
+from dolabra.analysis.module.modules import PayableFunction, StorageCallerCheck, Getter, Setter
 
 class ModuleLoader(object, metaclass=Singleton):
     def __init__(self):
