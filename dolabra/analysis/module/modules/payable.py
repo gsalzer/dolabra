@@ -1,90 +1,36 @@
 import logging
-from typing import List
+from typing import Optional
 
-from mythril.analysis import solver
-from mythril.analysis.module.base import DetectionModule, EntryPoint
-from mythril.exceptions import UnsatError
 from mythril.laser.ethereum.state.global_state import GlobalState
-from mythril.laser.smt import UGT, symbol_factory
 
-from mythril.analysis.potential_issues import (
-    PotentialIssue,
-    get_potential_issues_annotation,
-)
+from dolabra.analysis.module.modules.basemodule import BaseModule
+from dolabra.analysis.module.modules.taints import CallValueTaint
 
 log = logging.getLogger(__name__)
 
+class Payable(BaseModule):
+    pattern_name = "Payable"
 
-class PayableFunction(DetectionModule):
-    name = "Payable Function Analysis"
-    description = "Analyzes payable and non-payable functions."
-    entry_point = EntryPoint.CALLBACK
-    pre_hooks = ["STOP", "RETURN", "REVERT", "HALT"]
+    pre_hooks = ['JUMPI', 'RETURN', 'STOP', 'REVERT', 'INVALID']
+    post_hooks = ['CALLVALUE']
 
     def __init__(self):
+        self.payable_functions = set()
+        self.non_payable_functions = set()
         super().__init__()
 
-    def _execute(self, state: GlobalState) -> None:
-        potential_issues = self._analyze_state(state)
+    def _analyze(self, state: GlobalState, prev_state: Optional[GlobalState] = None) -> Optional[dict]:
+        if prev_state and prev_state.instruction['opcode'] == 'CALLVALUE':
+            state.mstate.stack[-1].annotate(CallValueTaint())
 
-        annotation = get_potential_issues_annotation(state)
-        annotation.potential_issues.extend(potential_issues)
+        if state.instruction['opcode'] == 'JUMPI' and CallValueTaint() in state.mstate.stack[-2].annotations:
+            self.non_payable_functions.add(state.environment.active_function_name)
 
-    def _analyze_state(self, state: GlobalState) -> List[PotentialIssue]:
-        opcode = state.get_current_instruction()["opcode"]
-        address = state.get_current_instruction()["address"]
+        elif state.instruction['opcode'] in ['RETURN', 'STOP', 'REVERT', 'INVALID']:
+            if state.environment.active_function_name not in self.non_payable_functions:
+                self.payable_functions.add(state.environment.active_function_name)
+                return {'contract': state.environment.active_account.contract_name,
+                        'pattern': self.pattern_name,
+                        'function_name': state.environment.active_function_name}
 
-        function_id = state.environment.active_function_name
-
-        log.info(
-            f"Encountered {opcode} at address {address} in function ({function_id})"
-        )
-
-        # Check for payable and non-payable constraints
-        constraints_zero_value = state.world_state.constraints + \
-            [state.environment.callvalue == 0]
-        constraints_non_zero_value = state.world_state.constraints + [
-            UGT(state.environment.callvalue, symbol_factory.BitVecVal(0, 256))
-        ]
-
-        try:
-            solver.get_transaction_sequence(state, constraints_zero_value)
-            payable = False
-        except UnsatError:
-            payable = True
-
-        if not payable:
-            try:
-                solver.get_transaction_sequence(
-                    state, constraints_non_zero_value)
-                non_payable = False
-            except UnsatError:
-                non_payable = True
-        else:
-            non_payable = False
-
-        if payable and non_payable:
-            log.info(
-                f"Function ({function_id}) seems to have a programming error (both payable and non-payable)."
-            )
-            potential_issue = PotentialIssue(
-                contract=state.environment.active_account.contract_name,
-                function_name=state.environment.active_function_name,
-                address=address,
-                swc_id="N/A",
-                title="Payable Function Analysis",
-                severity="Neutral",
-                description_head="Function seems to have a programming error (both payable and non-payable).",
-                bytecode=state.environment.code.bytecode,
-                detector=self
-            )
-            return [potential_issue]
-        else:
-            log.info(
-                f"Function ({function_id}) is {'payable' if payable else 'non-payable'}."
-            )
-            return []
-
-
-detector = PayableFunction()
-
+        return None
