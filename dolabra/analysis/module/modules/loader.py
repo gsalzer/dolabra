@@ -5,7 +5,7 @@ from mythril.support.support_utils import Singleton
 from mythril.exceptions import DetectorNotFoundError
 
 from dolabra.analysis.module.modules.basemodule import BaseModule
-from dolabra.analysis.module.modules import PayableFunction, StorageCallerCheck, Getter, Setter
+from dolabra.analysis.module.modules import Payable, StorageCallerCheck, Getter, Setter, EtherHandling
 
 class ModuleLoader(object, metaclass=Singleton):
     def __init__(self):
@@ -43,9 +43,10 @@ class ModuleLoader(object, metaclass=Singleton):
     def _register_modules(self):
         self._modules.extend(
             [
-                PayableFunction(),
+                Payable(),
                 StorageCallerCheck(),
                 Getter(),
-                Setter()
+                Setter(),
+                EtherHandling()
             ]
         )

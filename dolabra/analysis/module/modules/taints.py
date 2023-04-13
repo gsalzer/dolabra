@@ -26,6 +26,24 @@ class DupTwoTaint:
 
     def __eq__(self, other: 'DupTwoTaint'):
         return isinstance(other, DupTwoTaint)
+    
+class CallValueTaint:
+    """ Class to be used as annotation for CALLVALUE elements. """
+
+    def __hash__(self):
+        return hash(type(self))
+
+    def __eq__(self, other: 'CallValueTaint'):
+        return isinstance(other, CallValueTaint)  
+
+class IsZeroTaint:
+    """ Class to be used as annotation for ISZERO elements. """
+
+    def __hash__(self):
+        return hash(type(self))
+
+    def __eq__(self, other: 'IsZeroTaint'):
+        return isinstance(other, IsZeroTaint)       
 
 class SwapOneTaint:
     """ Class to be used as annotation for SWAP1 elements. """
