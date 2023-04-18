@@ -1,16 +1,6 @@
 import time
 import logging
 from typing import Optional
-from dolabra.analysis.module.modules.loader import ModuleLoader
-
-# Import custom detection modules
-from dolabra.analysis.module.modules.payable import PayableFunction
-from dolabra.analysis.module.modules.storage_caller_check import StorageCallerCheck
-from dolabra.logger.log_manager import setup_logger
-from dolabra.contract_loaders.file_loader import FileLoader
-from dolabra.contract_loaders.jsonrpc_loader import JsonRpcLoader
-
-from dolabra.constants import TIMEOUT, MAX_DEPTH, BOUNDED_LOOPS_LIMIT
 
 # laser imports
 from mythril.laser.ethereum import svm
@@ -25,11 +15,20 @@ from mythril.laser.plugin.plugins import (
     InstructionProfilerBuilder,
 )
 
+from dolabra.analysis.module.modules.loader import ModuleLoader
+from dolabra.logger.log_manager import setup_logger
+from dolabra.contract_loaders.file_loader import FileLoader
+from dolabra.contract_loaders.jsonrpc_loader import JsonRpcLoader
+
+from dolabra.constants import TIMEOUT, MAX_DEPTH, BOUNDED_LOOPS_LIMIT
+
 setup_logger()
 log = logging.getLogger(__name__)
 
 class SymbolicWrapper:
-
+    white_list=["Getter", "Setter"]
+    #white_list=["StorageCallerCheck"]
+    
     def __init__(self, contract, module_loader: Optional[ModuleLoader] = ModuleLoader()):
         self.contract = contract
         self.module_loader = module_loader
@@ -76,7 +75,7 @@ class SymbolicWrapper:
     def _register_hooks_and_load_plugins(self, laser, bounded_loops_limit):
         log.info('Registering hooks and loading plugins...')     
 
-        for module in self.module_loader.get_detection_modules():
+        for module in self.module_loader.get_detection_modules(self.white_list):
             for hook in module.pre_hooks:
                 laser.register_hooks('pre', {hook: [module.execute]})
             for hook in module.post_hooks:
@@ -101,7 +100,13 @@ class SymbolicWrapper:
                        target_address=int(target_address, 16) if target_address else None)
         log.info('Symbolic execution finished in %.2f seconds.',
                  time.time() - start_time)
-        return start_time, time.time()
+        #return start_time, time.time()
+
+        report = []
+        for module in self.module_loader.get_detection_modules(self.white_list):
+            report.append(module.results)
+
+        return report    
 
     def run_analysis(self):
         log.info('Processing the contract and preparing for analysis...')
@@ -115,11 +120,11 @@ class SymbolicWrapper:
 
         self._register_hooks_and_load_plugins(laser, bounded_loops_limit=BOUNDED_LOOPS_LIMIT)
 
-        start_time, end_time = self._run_symbolic_execution(laser,
+        report = self._run_symbolic_execution(laser,
                                                             creation_code=bytecode,
                                                             target_address=contract_address,
                                                             world_state=world_state)
 
         # report = Report(start_time=start_time, end_time=end_time)
 
-        # return report
+        return report

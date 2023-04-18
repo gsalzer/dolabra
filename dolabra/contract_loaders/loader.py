@@ -1,4 +1,5 @@
 from enum import Enum
+
 from dolabra.contract_loaders.contract_loader import ContractLoader
 from dolabra.contract_loaders.binary_loader import BinaryLoader
 from dolabra.contract_loaders.solidity_loader import SolidityLoader
