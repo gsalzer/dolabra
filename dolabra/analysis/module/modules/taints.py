@@ -108,14 +108,23 @@ class EqualTaint:
     def __eq__(self, other: 'EqualTaint'):
         return isinstance(other, EqualTaint)  
     
-class CalldataTaint:
+class CalldataLoadTaint:
     """ Class to be used as annotation for CALLDATALOAD elements. """
 
     def __hash__(self):
         return hash(type(self))
 
-    def __eq__(self, other: 'CalldataTaint'):
-        return isinstance(other, CalldataTaint)
+    def __eq__(self, other: 'CalldataLoadTaint'):
+        return isinstance(other, CalldataLoadTaint)
+    
+class CalldataSizeTaint:
+    """ Class to be used as annotation for CALLDATALOAD elements. """
+
+    def __hash__(self):
+        return hash(type(self))
+
+    def __eq__(self, other: 'CalldataSizeTaint'):
+        return isinstance(other, CalldataSizeTaint)    
     
 class CallerTaint:
     """ Class to be used as annotation for CALLER elements. """
