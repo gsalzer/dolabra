@@ -10,6 +10,8 @@ REQUIREMENTS = [
     "Jinja2==2.11.2",
     "mythril==0.23.17",
     "colorama==0.4.3",
+    "pypandoc==1.5",
+    "py-solc==3.2.0"
 ]
 
 setup(
