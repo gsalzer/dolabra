@@ -15,9 +15,11 @@ class BinaryLoader(FileLoader):
         try:
             with open(self._file_path, 'rb') as contract_bin:
                 bytecode = contract_bin.read().decode()
+                print("in bytecode", bytecode)
         except IOError as e:
             log.error('Failed to open contract binary file: %s', e)
             raise IOError('Failed to open contract binary file')
+        #return EVMContract(code=bytecode)
         return EVMContract(creation_code=bytecode)
 
     @classmethod
