@@ -1,6 +1,6 @@
 import os
 
-dolabra_dir_name = '.ithildin'
+dolabra_dir_name = '.dolabra'
 dolabra_home = os.path.join(os.path.expanduser('~'), dolabra_dir_name)
 
 verifications_db_file = 'verifications.db'

@@ -225,7 +225,8 @@ def generate_contract_sample(instance_count: int,
                              sample_size: int,                             
                              ) -> Set[int]:    
     
-    return set(random.sample(range(0, instance_count), sample_size))
+    #return set(random.sample(range(0, instance_count), sample_size))
+    return set(random.sample(range(0, 150), sample_size))
 
 def count_files_in_directory(directory):
     return len([name for name in os.listdir(directory) if os.path.isfile(os.path.join(directory, name))])
@@ -236,7 +237,7 @@ def new_benchmark(args) -> None:
     instance_count = count_files_in_directory(args.dirpath)
     print("instance", instance_count)
     #file_sha256sum = hashlib.sha256(open(args.filename, 'rb').read()).hexdigest()
-    contract_sample = 2#generate_contract_sample(instance_count, args.sample_size)
+    contract_sample = generate_contract_sample(instance_count, args.sample_size)
     '''
     benchmark_report = Report(args.strategy.capitalize(), args.random_seed, args.timeout, args.max_depth, args.verification_ratio,
                               contracts_filename=os.path.basename(args.filename), file_sha256sum=file_sha256sum,
@@ -248,40 +249,43 @@ def new_benchmark(args) -> None:
     strategy_loader.set_modules([MODULES[strategy_name]()])
     positive_instances = set()
     files = glob.glob(os.path.join(args.dirpath, "*.hex"))
-    for file_name in files:
+    for i, file_name in enumerate(files):
         #with open(args.filename, 'r') as csv_file:
         with open(file_name, 'r') as file:
             print("file_name", file_name)
-            block_id, target_address = file_name.split('-')
-            print("file content", file.read())
-            for i in instance_count:
-                if i not in contract_sample:
-                    continue
-                log.info('Analyzing contract %d/%d at address %s', i + 1, instance_count, target_address)
-                path_to_current_file = "fail here"
-                contract_loader = Loader.get_contract(LoaderType.BINARY, path=path_to_current_file)
-                #loader_factory = get_factory(LoaderFactoryType.JSON_RPC, address=target_address, rpc=rpc)
-                #contract_loader = loader_factory.create()
-                symbolic_analysis = SymbolicWrapper(contract_loader)    
-                report = symbolic_analysis.run_analysis()
-                pprint.pprint(report, width=1)
-                #analysis_report = SymbolicWrapper().execute(contract_loader=contract_loader, timeout=args.timeout, max_depth=args.max_depth)
-                
-                if sum(len(report_item) for report_item in report) > 0:
-                    positive_instances.add(i)
-                else:
-                    log.info('Nothing found for contract %d/%d at address %s', i + 1, instance_count, target_address)
-                
-                detected_functions = [result.function_name
-                                    for report_item in report if len(report_item) > 0
-                                    for result in report_item]
-                
-                #compiler_version = row[args.version_column] if args.version_column is not None else None
-                function_hashes = contract_loader.disassembly().func_hashes if contract_loader.disassembly() else []
+            base_file_name = os.path.basename(file_name)
+            # Remove the file extension
+            base_file_name_without_extension = os.path.splitext(base_file_name)[0]
+            block_id, target_address = base_file_name_without_extension.split('-')
+            #print("file content", file.read())
+            
+            #if i not in contract_sample:
+            #    continue
+            log.info('Analyzing contract %d/%d at address %s', i + 1, instance_count, target_address)
+            contract_loader = Loader.get_contract(LoaderType.BINARY, path=file_name)
+            print(contract_loader)
+            #loader_factory = get_factory(LoaderFactoryType.JSON_RPC, address=target_address, rpc=rpc)
+            #contract_loader = loader_factory.create()
+            symbolic_analysis = SymbolicWrapper(contract_loader)    
+            report = symbolic_analysis.run_analysis()
+            pprint.pprint(report, width=1)
+            #analysis_report = SymbolicWrapper().execute(contract_loader=contract_loader, timeout=args.timeout, max_depth=args.max_depth)
+            
+            if sum(len(report_item) for report_item in report) > 0:
+                positive_instances.add(i)
+            else:
+                log.info('Nothing found for contract %d/%d at address %s', i + 1, instance_count, target_address)
+            
+            detected_functions = [result.__dir__
+                                for report_item in report if len(report_item) > 0
+                                for result in report_item]
+            
+            #compiler_version = row[args.version_column] if args.version_column is not None else None
+            function_hashes = contract_loader.disassembly().func_hashes if contract_loader.disassembly() else []
 
-                print(detected_functions)
-                #benchmark_report.add_result(Result(function_hashes, target_address, i, detected_functions, compiler_version=compiler_version))
-                strategy_loader.reset_modules()
+            print(detected_functions)
+            #benchmark_report.add_result(Result(function_hashes, target_address, i, detected_functions, compiler_version=compiler_version))
+            strategy_loader.reset_modules()
     #benchmark_report.end_time = time.strftime(TIME_FORMAT)
     negative_instances = contract_sample - positive_instances
     positive_sample = set(random.sample(positive_instances, round(len(positive_instances) * args.verification_ratio)))
