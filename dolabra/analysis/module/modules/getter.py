@@ -12,7 +12,7 @@ state_changers = ['SSTORE', 'CALL', 'CALLCODE', 'DELEGATECALL', 'STATICCALL', 'S
 tx_or_block_access = ['ORIGIN', 'GASPRICE', 'COINBASE', 'TIMESTAMP', 'NUMBER', 'DIFFICULTY', 'GASLIMIT', 'GAS']
 
 class Getter(BaseModule):
-    pattern_name = "Getter"    
+    pattern_name = "GETTER"    
 
     pre_hooks = ['RETURN'] + state_changers
     post_hooks = ['PUSH1', 'DUP1', 'SLOAD', 'CALLDATALOAD', 'SHA3', 'CALLDATASIZE'] + tx_or_block_access

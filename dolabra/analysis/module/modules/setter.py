@@ -9,7 +9,7 @@ from dolabra.analysis.module.modules.taints import DupOneTaint, PushOneTaint, Du
 log = logging.getLogger(__name__)
 
 class Setter(BaseModule):
-    pattern_name = "Setter"
+    pattern_name = "SETTER"
 
     post_hooks = ['DUP1', 'PUSH1', 'DUP2', 'SWAP1', 'SSTORE'] 
 
