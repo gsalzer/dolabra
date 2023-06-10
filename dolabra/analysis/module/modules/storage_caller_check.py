@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 essential_operations = ['SSTORE', 'CALL', 'CALLCODE', 'DELEGATECALL', 'STATICCALL']
 
 class StorageCallerCheck(BaseModule):
-    pattern_name = "StorageCallerCheck"
+    pattern_name = "STORAGE_CALLER_CHECK"
     jumpdest_counter = 0
     #description = "Detects when a contract checks if a tainted input is equal to a stored address before execution."
 
