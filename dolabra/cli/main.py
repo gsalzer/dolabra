@@ -2,6 +2,8 @@ from argparse import ArgumentParser
 from typing import Text
 import pprint
 
+import mythril.support.support_args
+
 from dolabra.analysis.symbolic import SymbolicWrapper
 from dolabra.contract_loaders.loader import LoaderType, Loader
 
@@ -45,6 +47,8 @@ def init_analysis_parser(parser: ArgumentParser) -> None:
     input_group.add_argument('-s', '--sol', metavar='PATH', type=Text, dest='sol_path', help='path to solidity contract')
     input_group.add_argument('-b', '--bin', metavar='PATH', type=Text, dest='bin_path',
                              help='path to file containing contract creation bytecode')
+    input_group.add_argument('-r', '--bin-runtime', metavar='PATH', type=Text, dest='runtime_path',
+                             help='path to file containing runtime bytecode')
 
     sym_exec_arguments = parser.add_argument_group('symbolic execution arguments')
     sym_exec_arguments.add_argument('--timeout', metavar='SEC', type=int, default=DEFAULT_TIMEOUT_ANALYSIS,
@@ -101,10 +105,18 @@ def init_benchmark_parser(parser: ArgumentParser) -> None:
                                          help='path to benchmark state file (default: {})'.format(benchmark_state_path))    
 
 
+
+def init_mythril(args):
+    mythril.support.support_args.args.pruning_factor = 0
+
+    
+
 def analyze(args) -> None:
     # Get the contract loader factory based on the specified options
     if args.bin_path:
         contract_loader = Loader.get_contract(LoaderType.BINARY, path=args.bin_path)
+    elif args.runtime_path:
+        contract_loader = Loader.get_contract(LoaderType.RUNTIME, path=args.runtime_path)
     elif args.sol_path:
         contract_loader = Loader.get_contract(LoaderType.SOLIDITY, path=args.sol_path, solc=args.solc)
     elif args.address:
@@ -121,6 +133,8 @@ def main():
     parser = init_parser()
     args = parser.parse_args()
 
+    init_mythril(args)
+    
     if args.command == 'analyze':
         analyze(args)
     elif args.command == 'benchmark' and args.benchmark_command is not None:
