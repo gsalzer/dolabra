@@ -18,6 +18,7 @@ class BinaryLoader(FileLoader):
         except IOError as e:
             log.error('Failed to open contract binary file: %s', e)
             raise IOError('Failed to open contract binary file')
+        #return EVMContract(code=bytecode)
         return EVMContract(creation_code=bytecode)
 
     @classmethod
